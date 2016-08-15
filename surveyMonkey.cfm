@@ -2,8 +2,7 @@
 	satifactionSurveyID = 69797272;
 	narrativeQuestion = 8; //The narrative is question 8 on the response back from survey monkey
 
-	authKey = "bearer QJOrxUCBw9.tU2DLELYZngHLGZ8DKhO.liI.9iy9JlIgWpiRoNv2iSpR3k.bIHS-S9AuQlwp.I0Ean0ZIbrHrUzvcWmaPDGvo4Cd2w5uOFWllsHCovlAqwCUiLVAijo9pM5Ic8eIz0v5N9gof6HH9f.GTaMLMfdQwkAp5ooe3jHdbTB86E9-2.j3fY0HPXvu";
-	apiKey = "snvufpgvu6yfhmqy37qvn8g2";
+	include "apiKeys.cfm";
 
 	surveyHoursBack = 24; //number of hours to go back in history to pull responses from. Set this the same at your Scheduled task interval
 
