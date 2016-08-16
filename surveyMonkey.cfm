@@ -4,7 +4,7 @@
 
 	include "apiKeys.cfm";
 
-	surveyHoursBack = 24; //number of hours to go back in history to pull responses from. Set this the same at your Scheduled task interval
+	surveyHoursBack = 72; //number of hours to go back in history to pull responses from. Set this the same at your Scheduled task interval
 
 	currentUTCTime = DateConvert("local2Utc", now());
 	surveyQueryTime = dateAdd('h',-surveyHoursBack, currentUTCTime);
@@ -33,10 +33,13 @@
 	surveyQuestionDetails.addParam(type:"header",name:"Authorization",value:"#authKey#");
 	surveyQuestionDetails.addParam(type:"url",name:"api_key",value:"#apiKey#");
 
-	resultDetails = surveyQuestionDetails.send().getPrefix();
-	contentDetails = resultDetails.FileContent;
+	//resultDetails = surveyQuestionDetails.send().getPrefix();
+	//contentDetails = resultDetails.FileContent;
+
+	contentDetails = fileread('satifactionSurveyDetails.json');
 
 	satifactionSurveyDetails = DeserializeJSON(contentDetails);
+	
 	writeDump(satifactionSurveyDetails);
 
 	surveyMonkeySatisfactionSurveysHTTP = new http();
@@ -48,8 +51,11 @@
 	surveyMonkeySatisfactionSurveysHTTP.addParam(type:"url",name:"per_page",value:"100");
 	surveyMonkeySatisfactionSurveysHTTP.addParam(type:"url",name:"start_created_at",value:surveyQueryTime);
 
-	result = surveyMonkeySatisfactionSurveysHTTP.send().getPrefix();
-	content = result.FileContent;
+	//result = surveyMonkeySatisfactionSurveysHTTP.send().getPrefix();
+	//content = result.FileContent;
+
+	//filewrite('satifactionSurveyResults.json',content);
+	content = fileread('satifactionSurveyResults.json');
 
 	satifactionSurveyResults = DeserializeJSON(content);
 	writeDump(satifactionSurveyResults);
@@ -59,25 +65,45 @@
 		for ( ii = 1; ii <= arrayLen(satifactionSurveyResults.data[i].pages); ii++ ){
 			//Each Page
 			for ( iii = 1; iii <= arrayLen(satifactionSurveyResults.data[i].pages[ii].questions); iii++ ){
-				//Each Question
-				questionId = satifactionSurveyResults.data[i].pages[ii].questions[iii].id;
-				questionAnswerDetails = {
-					'responseId': satifactionSurveyResults.data[i].id,
-					'questionId': questionId,
-					'questionText': getQuestionText(
-						ii,
-						questionId,
-						satifactionSurveyDetails
-					 )
-				}
-				if ( structKeyExists(satifactionSurveyResults.data[i].pages[ii].questions[iii].answers[1],'choice_id') ){
-					answerId = satifactionSurveyResults.data[i].pages[ii].questions[iii].answers[1];
-					answerText = '';
-				} else {
-					answerText = satifactionSurveyResults.data[i].pages[ii].questions[iii].answers[1].text;
+				for ( iiii = 1; iiii <= arrayLen(satifactionSurveyResults.data[i].pages[ii].questions[iii].answers); iiii++ ){
+					//Each Question Row
+					questionId = satifactionSurveyResults.data[i].pages[ii].questions[iii].id;
+					if ( structKeyExists( satifactionSurveyResults.data[i].pages[ii].questions[iii].answers[iiii], 'row_id' ) ){
+						rowId = satifactionSurveyResults.data[i].pages[ii].questions[iii].answers[iiii].row_id;
+					} else {
+						rowId = 0;
+					}
+					if ( structKeyExists( satifactionSurveyResults.data[i].pages[ii].questions[iii].answers[iiii], 'choice_id' ) ){
+						choiceId = satifactionSurveyResults.data[i].pages[ii].questions[iii].answers[iiii].choice_id;
+					} else {
+						choiceId = 0;
+					}
+
+					// answers = getQA(
+					// 	ii,
+					// 	questionId,
+					// 	rowId,
+					// 	choiceId,
+					// 	satifactionSurveyDetails
+					// );
+					questionAnswerDetails = {
+						'responseId': satifactionSurveyResults.data[i].id,
+						'timeStamp': satifactionSurveyResults.data[i].date_created,
+						'questionId': questionId,
+						'questionHeading': getQuestionText(
+							ii,
+							questionId,
+							satifactionSurveyDetails
+						),
+						'rowText': '',
+						'answerId': '',
+						'answerText': ''
+					
 				}
 
 				arrayAppend(resultsArray, questionAnswerDetails);
+				}
+				
 			}
 		}
 	}
@@ -95,6 +121,19 @@ public any function getQuestionText(page, questionId, surveyDetails) {
 
 	return rtnText;
 }
+
+public any function getRowText(page, questionId, rowId, surveyDetails) {
+	var rtnText = 'NotFound';
+	for ( var f = 1; f <= arrayLen(arguments.surveyDetails.pages[arguments.page].questions); f++ ){
+		if ( arguments.surveyDetails.pages[arguments.page].questions[f].id == arguments.questionId ){
+			//Found Question
+			rtnText = arguments.surveyDetails.pages[arguments.page].questions[f].headings[1].heading;
+		}
+	}
+
+	return rtnText;
+}
+
 
 abort;
 
