@@ -57,8 +57,8 @@
 	contentDetails = resultDetails.FileContent;
 
 	//filewrite('satifactionSurveyDetails.json',contentDetails);
+	//contentDetails = fileread('satifactionSurveyDetails.json');
 
-	contentDetails = fileread('satifactionSurveyDetails.json');
 	satifactionSurveyDetails = DeserializeJSON(contentDetails);
 
 	/*
@@ -74,11 +74,12 @@
 	surveyMonkeySatisfactionSurveysHTTP.addParam(type:"url",name:"per_page",value:"100");
 	surveyMonkeySatisfactionSurveysHTTP.addParam(type:"url",name:"start_created_at",value:surveyQueryTime);
 
-	//result = surveyMonkeySatisfactionSurveysHTTP.send().getPrefix();
-	//content = result.FileContent;
+	result = surveyMonkeySatisfactionSurveysHTTP.send().getPrefix();
+	content = result.FileContent;
 
 	//filewrite('satifactionSurveyResults.json',content);
-	content = fileread('satifactionSurveyResults.json');
+	//content = fileread('satifactionSurveyResults.json');
+
 	satifactionSurveyResults = DeserializeJSON(content);
 
 	//writeDump(satifactionSurveyDetails, true);
