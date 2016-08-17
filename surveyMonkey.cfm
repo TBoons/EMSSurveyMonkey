@@ -33,14 +33,13 @@
 	surveyQuestionDetails.addParam(type:"header",name:"Authorization",value:"#authKey#");
 	surveyQuestionDetails.addParam(type:"url",name:"api_key",value:"#apiKey#");
 
-	//resultDetails = surveyQuestionDetails.send().getPrefix();
-	//contentDetails = resultDetails.FileContent;
+	resultDetails = surveyQuestionDetails.send().getPrefix();
+	contentDetails = resultDetails.FileContent;
+
+	//filewrite('satifactionSurveyDetails.json',contentDetails);
 
 	contentDetails = fileread('satifactionSurveyDetails.json');
-
 	satifactionSurveyDetails = DeserializeJSON(contentDetails);
-	
-	writeDump(satifactionSurveyDetails);
 
 	surveyMonkeySatisfactionSurveysHTTP = new http();
 	surveyMonkeySatisfactionSurveysHTTP.setMethod("GET");
@@ -56,163 +55,106 @@
 
 	//filewrite('satifactionSurveyResults.json',content);
 	content = fileread('satifactionSurveyResults.json');
-
 	satifactionSurveyResults = DeserializeJSON(content);
-	writeDump(satifactionSurveyResults);
+
+	writeDump(satifactionSurveyDetails, false);
+	writeDump(satifactionSurveyResults, false);
+
 	resultsArray = [];
-	for ( i = 1; i <= arrayLen(satifactionSurveyResults.data); i++ ){
-		//Each Response
-		for ( ii = 1; ii <= arrayLen(satifactionSurveyResults.data[i].pages); ii++ ){
-			//Each Page
-			for ( iii = 1; iii <= arrayLen(satifactionSurveyResults.data[i].pages[ii].questions); iii++ ){
-				for ( iiii = 1; iiii <= arrayLen(satifactionSurveyResults.data[i].pages[ii].questions[iii].answers); iiii++ ){
-					//Each Question Row
-					questionId = satifactionSurveyResults.data[i].pages[ii].questions[iii].id;
-					if ( structKeyExists( satifactionSurveyResults.data[i].pages[ii].questions[iii].answers[iiii], 'row_id' ) ){
-						rowId = satifactionSurveyResults.data[i].pages[ii].questions[iii].answers[iiii].row_id;
+
+	for ( surveyResponse in satifactionSurveyResults.data ){
+		//Loops over each survey response
+		for ( page in surveyResponse.pages ){
+			//Loops over pages in survey
+			pageTitle = getPageTitle( page.id, satifactionSurveyDetails.pages );
+			for ( question in page.questions ){
+				//Loops over Questions on page
+				questionHeading = getQuestionHeading(
+						question.id,
+						page.id,
+						satifactionSurveyDetails.pages
+					);
+				for ( answer in question.answers ){
+					if ( structKeyExists(answer,'row_id') ){
+						rowId = answer.row_id;
+						rowText = getRowText(
+							answer.row_id,
+							question.id,
+							page.id,
+							satifactionSurveyDetails.pages
+						);
 					} else {
 						rowId = 0;
+						rowText = '';
 					}
-					if ( structKeyExists( satifactionSurveyResults.data[i].pages[ii].questions[iii].answers[iiii], 'choice_id' ) ){
-						choiceId = satifactionSurveyResults.data[i].pages[ii].questions[iii].answers[iiii].choice_id;
-					} else {
-						choiceId = 0;
+					if ( structKeyExists(answer,'text') ){
+						answerText = answer.text;
+					} else if ( structKeyExists(answer,'choice_id') ) {
+						answerText = answer.choice_id;
 					}
-
-					// answers = getQA(
-					// 	ii,
-					// 	questionId,
-					// 	rowId,
-					// 	choiceId,
-					// 	satifactionSurveyDetails
-					// );
-					questionAnswerDetails = {
-						'responseId': satifactionSurveyResults.data[i].id,
-						'timeStamp': satifactionSurveyResults.data[i].date_created,
-						'questionId': questionId,
-						'questionHeading': getQuestionText(
-							ii,
-							questionId,
-							satifactionSurveyDetails
-						),
-						'rowText': '',
-						'answerId': '',
-						'answerText': ''
-					
+					response = {
+						'responseId': surveyResponse.id,
+						'responseTime': surveyResponse.date_created,
+						'surveyId': surveyResponse.survey_id,
+						'pageTitle': pageTitle,
+						'questionHeading': questionHeading,
+						'pageAndQuestion': page.id & ',' & question.id,
+						'answerText': answerText,
+						'rowId': rowId,
+						'rowText': rowText
+					}
+					arrayAppend(resultsArray, response);
 				}
 
-				arrayAppend(resultsArray, questionAnswerDetails);
+			}
+
+		}
+	}
+
+	public any function getPageTitle(pageId, surveyPages) {
+		//writeDump(arguments);
+		for ( var page in arguments.surveyPages ){
+			if ( page.id == arguments.pageId ){
+				return page.title;
+			}
+		}
+	}
+
+	public any function getQuestionHeading(questionId, pageId, surveyPages) {
+		//writeDump(arguments);
+		for ( var page in arguments.surveyPages ){
+			if ( page.id == arguments.pageId ){
+				for ( var question in page.questions ){
+					//Loops over question in Survey
+					if ( question.id == arguments.questionId ){
+						return question.headings[1].heading;//Returns first element in headings
+					}
 				}
-				
+
+			}
+		}
+	}
+
+	public any function getRowText(rowId, questionId, pageId, surveyPages) {
+		//writeDump(arguments);
+		for ( var page in arguments.surveyPages ){
+			if ( page.id == arguments.pageId ){
+				for ( var question in page.questions ){
+					//Loops over question in Survey
+					if ( question.id == arguments.questionId ){
+						if ( structKeyExists(question,'answers') ){
+							for ( row in question.answers.rows ){
+								if ( row.id == arguments.rowId ){
+									return row.text;
+								}
+							}
+						}
+					}
+				}
+
 			}
 		}
 	}
 
 	writeDump(resultsArray);
-
-public any function getQuestionText(page, questionId, surveyDetails) {
-	var rtnText = 'NotFound';
-	for ( var f = 1; f <= arrayLen(arguments.surveyDetails.pages[arguments.page].questions); f++ ){
-		if ( arguments.surveyDetails.pages[arguments.page].questions[f].id == arguments.questionId ){
-			//Found Question
-			rtnText = arguments.surveyDetails.pages[arguments.page].questions[f].headings[1].heading;
-		}
-	}
-
-	return rtnText;
-}
-
-public any function getRowText(page, questionId, rowId, surveyDetails) {
-	var rtnText = 'NotFound';
-	for ( var f = 1; f <= arrayLen(arguments.surveyDetails.pages[arguments.page].questions); f++ ){
-		if ( arguments.surveyDetails.pages[arguments.page].questions[f].id == arguments.questionId ){
-			//Found Question
-			rtnText = arguments.surveyDetails.pages[arguments.page].questions[f].headings[1].heading;
-		}
-	}
-
-	return rtnText;
-}
-
-
-abort;
-
-	// surveyDetailsHTTP = new http();
-	// surveyDetailsHTTP.setMethod("GET");
-	// surveyDetailsHTTP.addParam(type:"header",name:"Content-Type",value:"application/json");
-	// surveyDetailsHTTP.addParam(type:"header",name:"Authorization",value:"#authKey#");
-	// surveyDetailsHTTP.addParam(type:"url",name:"api_key",value:"#apiKey#");
-
-	// resultsArray = [];
-	// resultCompiled = {};
-
-	// for ( i = 1; i <= arrayLen(satifactionSurveyResults.data); i++ ){
-	// 	//writeDump(satifactionSurveyResults.data[i]);
-	// 	surveyDetailsHTTP.setUrl('https://api.surveymonkey.net/v3/surveys/#satifactionSurveyID#/responses/#satifactionSurveyResults.data[i].id#/details');
-	// 	detailsResult = surveyDetailsHTTP.send().getPrefix();
-	// 	detailsContent = detailsResult.FileContent;
-	// 	writeDump( DeserializeJSON( detailsContent ) );
-	// }
-
-	// for ( i = 1; i <= arrayLen(satifactionSurveyResults.data); i++ ){
-	// }
-
-
-
-	// for ( i = 1; i <= arrayLen(satifactionSurveyResults.data); i++ ){ //Loops over each response
-
-	// 	if ( arrayLen(satifactionSurveyResults.data[i].pages[narrativeQuestion].questions) ){ //Determines if Question is answered
-	// 		for ( ii = 1; ii <= arrayLen(satifactionSurveyResults.data[i].pages[narrativeQuestion].questions[1].answers); ii++ ){ //quesion was answered
-	// 			resultCompiled = {
-	// 				name:"",
-	// 				phone:"",
-	// 				email:"",
-	// 				comment:"",
-	// 				id:satifactionSurveyResults.data[i].id,
-	// 				date:satifactionSurveyResults.data[i].date_created
-	// 			};
-	// 			for ( iii = 1; iii <= arrayLen(satifactionSurveyResults.data[i].pages[narrativeQuestion].questions); iii++ ){ //Phone, Name, Email, Comment answer loops
-	// 				for ( iiii = 1; iiii <= arrayLen(satifactionSurveyResults.data[i].pages[narrativeQuestion].questions[iii].answers); iiii++ ){
-	// 					if ( structKeyExists(satifactionSurveyResults.data[i].pages[narrativeQuestion].questions[iii].answers[iiii],'row_id') ){
-	// 						switch(satifactionSurveyResults.data[i].pages[narrativeQuestion].questions[iii].answers[iiii].row_id){
-	// 							case 9457876478: //name field
-	// 								resultCompiled.comment = satifactionSurveyResults.data[i].pages[narrativeQuestion].questions[iii].answers[iiii].text;
-	// 							break;
-	// 							case 9457876486: //email field
-	// 								resultCompiled.email = satifactionSurveyResults.data[i].pages[narrativeQuestion].questions[iii].answers[iiii].text;
-	// 							break;
-	// 							case 9457876487: //phone field
-	// 								resultCompiled.phone = satifactionSurveyResults.data[i].pages[narrativeQuestion].questions[iii].answers[iiii].text;
-	// 							break;
-
-	// 							default:
-	// 								//Not a field we are parsing. Ignore.
-	// 							break;
-	// 						}
-
-	// 					} else {
-	// 						//The Comments section is missing a row_id, if statement determines if this is the comments answer
-	// 						if ( !structKeyExists(satifactionSurveyResults.data[i].pages[narrativeQuestion].questions[iii].answers[iiii],'row_id') ){
-	// 							resultCompiled.comment = satifactionSurveyResults.data[i].pages[narrativeQuestion].questions[iii].answers[iiii].text;
-	// 						}
-
-	// 					}
-	// 				}
-	// 			}
-	// 		}
-	// 		arrayAppend(resultsArray, resultCompiled);
-	// 	}
-	// }
 </cfscript>
-
-<cfloop array="#resultsArray#" index="r" >
-	<cfoutput>
-		<p>Name: <!--- #r.name# ---></p>
-		<p>Email: <!--- #r.email# ---></p>
-		<p>Phone: <!--- #r.phone# ---></p>
-		<p>Comment: #r.comment#</p>
-		<p>id: #r.id#</p>
-	</cfoutput>
-	<hr>
-</cfloop>
-
