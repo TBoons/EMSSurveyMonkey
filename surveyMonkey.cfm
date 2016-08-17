@@ -143,7 +143,7 @@
 					//Loops over question in Survey
 					if ( question.id == arguments.questionId ){
 						if ( structKeyExists(question,'answers') ){
-							for ( row in question.answers.rows ){
+							for ( var row in question.answers.rows ){
 								if ( row.id == arguments.rowId ){
 									return row.text;
 								}
