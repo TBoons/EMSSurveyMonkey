@@ -1,12 +1,10 @@
 <cfscript>
-
 	/*
 		TODO:
+			Copy apiKeys.cfm in to same folder as this file
 			Create DB Tables
-			Loop of Array and insert data in to tables
-			Find MAX( responseTime ) in DB to populate surveyQueryTime variable to query Suvery Monkey for anything newer than last entered survey
-			Write simple page for determining the Survey Monkey Survey ID for use with other surveys
-			Uncomment out http requests to fetch live data
+			Change 'schema.surveryResults' in two queries to actual database scema and table
+			Set devMode = false;
 	*/
 
 	if ( !structKeyExists(url,'surveyId') ){ //Required URL parameter... Throws error is missing
@@ -16,11 +14,27 @@
 
 	include "apiKeys.cfm"; //API keys in this cfm file. authKey & apiKey must be set in here
 
-	surveyHoursBack = 72; //number of hours to go back in history to pull responses from. Set this the same at your Scheduled task interval, this can go away once we get MAX from DB
+	devMode = true; //Set to false once DB is setup and datasource on two queries is changed from TODO to actual datasource
+</cfscript>
 
-	currentUTCTime = DateConvert("local2Utc", now());
-	surveyQueryTime = dateAdd('h',-surveyHoursBack, currentUTCTime);
-	surveyQueryTime = dateFormat(surveyQueryTime, "YYYY-MM-DDT") & timeFormat(surveyQueryTime, "HH:MM:ss");
+
+<cfif devMode >
+	<cfset qryFindMaxTimeStamp.recordcount = 0 >
+<cfelse>
+	<cfquery datasource="TODO" name="qryFindMaxTimeStamp">
+		SELECT
+			MAX( sr.responseTime ) AS lastSurveyTime
+		FROM
+			schema.surveryResults sr
+	</cfquery>
+</cfif>
+
+<cfscript>
+	if ( qryFindMaxTimeStamp.recordcount == 0 ){
+		surveyQueryTime = "2016-08-20T00:00:00";
+	} else {
+		surveyQueryTime = dateFormat(qryFindMaxTimeStamp.lastSurveyTime, "YYYY-MM-DDT") & timeFormat(qryFindMaxTimeStamp.lastSurveyTime, "HH:MM:ss");
+	}
 
 	/*
 		This will get surveys in LCEMS's Survey Monkey Account
@@ -113,7 +127,7 @@
 					}
 					if ( structKeyExists(answer,'text') ){ //Fetch the text for responses that are text entry
 						answerText = answer.text;
-						answerWeight = 99999; //No weight. Giving it max weight for reporing
+						answerWeight = 9999; //No weight. Giving it max weight for reporing
 					} else if ( structKeyExists(answer,'choice_id') ) { //Fetches data for the choice choosen by user
 						answerData = getChoiceText(
 								answer.choice_id,
@@ -122,7 +136,7 @@
 								satifactionSurveyDetails.pages
 							);
 						answerText = answerData.text;
-						answerWeight = answerData.weight; //Weight of answer, 99999 is non weighted question
+						answerWeight = answerData.weight; //Weight of answer, 9999 is non weighted question
 					}
 					noOfQuestions++; //incements the number of questions per response
 					response = { //builds the final structure of data for each response
@@ -202,7 +216,7 @@
 							for ( var choice in question.answers.choices ){
 								//Loops of choices for questions
 								if ( choice.id == arguments.choiceId ){
-									return {text: choice.text, weight: ( structkeyexists(choice,'weight') ? choice.weight : 99999 ) };
+									return {text: choice.text, weight: ( structkeyexists(choice,'weight') ? choice.weight : 9999 ) };
 								}
 							}
 						}
@@ -213,5 +227,54 @@
 		}
 	}
 
-	writeDump(resultsArray);
+	//writeDump(resultsArray);
 </cfscript>
+
+<cfloop array="#resultsArray#" index="result" >
+	<cfif devMode >
+		<cfoutput>
+			<h3>Dev Mode - Would insert this record</h3>
+			pageTitle - #left( result.01_pageTitle, 255 )# <br>
+			,questionHeading - #left( result.02_questionHeading, 255 )# <br>
+			,rowText - #left( result.03_rowText, 255 )# <br>
+			,answerText - #left( result.04_answerText, 1000 )# <br>
+			,answerWeight - #result.05_answerWeight# <br>
+			,responseId - #result.06_responseId# <br>
+			,responseTime - #result.07_responseTime# <br>
+			,surveyId - #result.08_surveyId# <br>
+			,questionId - #result.09_questionId# <br>
+			,questionNo - #result.10_questionNo# <br>
+			<hr>
+		</cfoutput>
+	<cfelse>
+		<cfquery datasource="TODO" name="qryFindMaxTimeStamp">
+			INSERT INTO
+				schema.surveryResults
+				(
+					pageTitle
+					,questionHeading
+					,rowText
+					,answerText
+					,answerWeight
+					,responseId
+					,responseTime
+					,surveyId
+					,questionId
+					,questionNo
+				)
+			VALUES
+				(
+					<cfqueryparam value="#left( result.01_pageTitle, 255 )#" cfsqltype="cf_sql_varchar" maxlength="255" >
+					,<cfqueryparam value="#left( result.02_questionHeading, 255 )#" cfsqltype="cf_sql_varchar" maxlength="255" >
+					,<cfqueryparam value="#left( result.03_rowText, 255 )#" cfsqltype="cf_sql_varchar" maxlength="255" >
+					,<cfqueryparam value="#left( result.04_answerText, 1000 )#" cfsqltype="cf_sql_varchar" maxlength="1000" >
+					,<cfqueryparam value="#result.05_answerWeight#" cfsqltype="cf_sql_integer" >
+					,<cfqueryparam value="#result.06_responseId#" cfsqltype="cf_sql_bigint" >
+					,<cfqueryparam value="#result.07_responseTime#" cfsqltype="cf_sql_timestamp" >
+					,<cfqueryparam value="#result.08_surveyId#" cfsqltype="cf_sql_bigint" >
+					,<cfqueryparam value="#result.09_questionId#" cfsqltype="cf_sql_bigint" >
+					,<cfqueryparam value="#result.10_questionNo#" cfsqltype="cf_sql_integer" >
+				)
+		</cfquery>
+	</cfif>
+</cfloop>
