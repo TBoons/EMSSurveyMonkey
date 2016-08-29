@@ -96,9 +96,6 @@
 
 	satifactionSurveyResults = DeserializeJSON(content);
 
-	//writeDump(satifactionSurveyDetails, true);
-	//writeDump(satifactionSurveyResults, true);
-
 	resultsArray = []; //build array of responses for later looping
 
 	for ( surveyResponse in satifactionSurveyResults.data ){
@@ -112,7 +109,7 @@
 						page.id,
 						satifactionSurveyDetails.pages
 					);
-				for ( answer in question.answers ){//Loops over answers on a page
+				for ( answer in question.answers ){ //Loops over answers on a page
 					if ( structKeyExists(answer,'row_id') ){
 						rowId = answer.row_id;
 						rowText = getRowText(
