@@ -26,6 +26,8 @@
 			MAX( sr.responseTime ) AS lastSurveyTime
 		FROM
 			schema.surveryResults sr
+		WHERE
+			sr.surveyId = <cfqueryparam value="#url.surveyId#" cfsqltype="cf_sql_bigint" />
 	</cfquery>
 </cfif>
 
