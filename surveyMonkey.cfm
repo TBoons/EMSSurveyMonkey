@@ -3,8 +3,27 @@
 		TODO:
 			Copy apiKeys.cfm in to same folder as this file
 			Create DB Tables
-			Change 'schema.surveryResults' in two queries to actual database scema and table
+			Change 'dev.surveryResults' in two queries to actual database scema and table
 			Set devMode = false;
+
+			--SQL Command to create table
+			CREATE TABLE
+				dev.surveryResults
+			(
+				id bigint NOT NULL auto_increment
+				,pageTitle varchar(255)
+				,questionHeading varchar(255)
+				,rowText varchar(255)
+				,answerText varchar(1000)
+				,answerWeight integer
+				,responseId bigint
+				,responseTime timestamp
+				,surveyId bigint
+				,questionId bigint
+				,questionNo integer
+				,PRIMARY KEY (id)
+			)
+
 	*/
 
 	if ( !structKeyExists(url,'surveyId') ){ //Required URL parameter... Throws error is missing
@@ -21,23 +40,24 @@
 <cfif devMode >
 	<cfset qryFindMaxTimeStamp.recordcount = 0 >
 <cfelse>
-	<cfquery datasource="TODO" name="qryFindMaxTimeStamp">
+	<cfquery datasource="sql07" name="qryFindMaxTimeStamp">
 		SELECT
 			MAX( sr.responseTime ) AS lastSurveyTime
 		FROM
-			schema.surveryResults sr
+			dev.surveryResults sr
 		WHERE
 			sr.surveyId = <cfqueryparam value="#url.surveyId#" cfsqltype="cf_sql_bigint" />
 	</cfquery>
 </cfif>
 
 <cfscript>
-	if ( qryFindMaxTimeStamp.recordcount == 0 ){
-		surveyQueryTime = "2016-08-20T00:00:00";
+	if ( qryFindMaxTimeStamp.recordcount >= 1 && isDate( qryFindMaxTimeStamp.lastSurveyTime ) ){
+		newDate = dateAdd("s", 1, qryFindMaxTimeStamp.lastSurveyTime); //add 1 second to latest record for query filter
+		surveyQueryTime = dateFormat(newDate, "YYYY-MM-DDT") & timeFormat(newDate, "HH:MM:ss");
 	} else {
-		surveyQueryTime = dateFormat(qryFindMaxTimeStamp.lastSurveyTime, "YYYY-MM-DDT") & timeFormat(qryFindMaxTimeStamp.lastSurveyTime, "HH:MM:ss");
+		surveyQueryTime = "2016-08-20T00:00:00";
 	}
-
+	writeDump(surveyQueryTime);
 	/*
 		This will get surveys in LCEMS's Survey Monkey Account
 	*/
@@ -101,6 +121,10 @@
 	resultsArray = []; //build array of responses for later looping
 
 	for ( surveyResponse in satifactionSurveyResults.data ){
+		//Formats the date coming back from Survey Monkey
+		thisCreateDate = listGetAt(surveyResponse.date_created, 1, 'T')
+			& ' '
+			& listGetAt( listGetAt(surveyResponse.date_created, 2, 'T'), 1, '+' );
 		noOfQuestions = 0; //Counts questions on each survey, this varies due to Yes/No questions
 		//Loops over each survey response
 		for ( page in surveyResponse.pages ){ //Loops over pages in survey
@@ -145,7 +169,7 @@
 						'04_answerText': answerText,
 						'05_answerWeight' : val( answerWeight ),
 						'06_responseId': surveyResponse.id,
-						'07_responseTime': surveyResponse.date_created,
+						'07_responseTime': thisCreateDate,
 						'08_surveyId': surveyResponse.survey_id,
 						'09_questionId': question.id,
 						'10_questionNo': val( noOfQuestions )
@@ -246,9 +270,9 @@
 			<hr>
 		</cfoutput>
 	<cfelse>
-		<cfquery datasource="TODO" name="qryFindMaxTimeStamp">
+		<cfquery datasource="sql07" name="qryFindMaxTimeStamp">
 			INSERT INTO
-				schema.surveryResults
+				dev.surveryResults
 				(
 					pageTitle
 					,questionHeading
