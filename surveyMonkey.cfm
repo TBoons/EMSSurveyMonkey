@@ -33,7 +33,7 @@
 
 	include "apiKeys.cfm"; //API keys in this cfm file. authKey & apiKey must be set in here
 
-	devMode = true; //Set to false once DB is setup and datasource on two queries is changed from TODO to actual datasource
+	devMode = false; //Set to false once DB is setup and datasource on two queries is changed from TODO to actual datasource
 </cfscript>
 
 
