@@ -3,12 +3,12 @@
 		TODO:
 			Copy apiKeys.cfm in to same folder as this file
 			Create DB Tables
-			Change 'dev.surveryResults' in two queries to actual database scema and table
+			Change 'dbo.surveryResults' in two queries to actual database scema and table
 			Set devMode = false;
 
 			--SQL Command to create table
 			CREATE TABLE
-				dev.surveryResults
+				dbo.surveryResults
 			(
 				id bigint NOT NULL auto_increment
 				,pageTitle varchar(255)
@@ -40,11 +40,11 @@
 <cfif devMode >
 	<cfset qryFindMaxTimeStamp.recordcount = 0 >
 <cfelse>
-	<cfquery datasource="sql07" name="qryFindMaxTimeStamp">
+	<cfquery datasource="emsapps" name="qryFindMaxTimeStamp">
 		SELECT
 			MAX( sr.responseTime ) AS lastSurveyTime
 		FROM
-			dev.surveryResults sr
+			dbo.surveryResults sr
 		WHERE
 			sr.surveyId = <cfqueryparam value="#url.surveyId#" cfsqltype="cf_sql_bigint" />
 	</cfquery>
@@ -270,9 +270,9 @@
 			<hr>
 		</cfoutput>
 	<cfelse>
-		<cfquery datasource="sql07" name="qryFindMaxTimeStamp">
+		<cfquery datasource="emsapps" name="qryFindMaxTimeStamp">
 			INSERT INTO
-				dev.surveryResults
+				dbo.surveryResults
 				(
 					pageTitle
 					,questionHeading
