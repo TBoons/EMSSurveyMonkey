@@ -2,28 +2,6 @@
 	/*
 		TODO:
 			Copy apiKeys.cfm in to same folder as this file
-			Create DB Tables
-			Change 'dbo.surveryMonkey' in two queries to actual database scema and table
-			Set devMode = false;
-
-			--SQL Command to create table
-			CREATE TABLE
-				dbo.surveryMonkey
-			(
-				id bigint NOT NULL auto_increment
-				,pageTitle varchar(255)
-				,questionHeading varchar(255)
-				,rowText varchar(255)
-				,answerText varchar(1000)
-				,answerWeight integer
-				,responseId bigint
-				,responseTime timestamp
-				,surveyId bigint
-				,questionId bigint
-				,questionNo integer
-				,PRIMARY KEY (id)
-			)
-
 	*/
 
 	if ( !structKeyExists(url,'surveyId') ){ //Required URL parameter... Throws error is missing
