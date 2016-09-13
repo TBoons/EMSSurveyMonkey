@@ -151,7 +151,7 @@
 						'08_surveyId': surveyResponse.survey_id,
 						'09_questionId': question.id,
 						'10_questionNo': val( noOfQuestions )
-					}
+					};
 					arrayAppend(resultsArray, response); //Adds to final array
 				}
 
