@@ -98,6 +98,11 @@
 
 	resultsArray = []; //build array of responses for later looping
 
+	if ( !structKeyExists(satifactionSurveyResults,'data')){
+		writeDump(satifactionSurveyResults);
+		abort;
+	}	
+
 	for ( surveyResponse in satifactionSurveyResults.data ){
 		//Formats the date coming back from Survey Monkey
 		thisCreateDate = listGetAt(surveyResponse.date_created, 1, 'T')
